@@ -1,0 +1,100 @@
+$schema: formula_plan
+version: 1
+updated_at: "2026-09-13T19:32:00+08:00"
+theme_summary: "基于双智能体协同与金丝雀沙箱验证的云原生微服务故障自愈方法及系统"
+paradigm_ids:
+  - weighted_sum
+  - ema_smooth
+  - single_threshold
+  - update_rule
+plain_zh: "基于操作影响拓扑与资源敏感度量化自愈动作爆炸半径，通过滑动平滑计算金丝雀健康度，据此自适应调整流量放行比例或触发原子回滚。"
+equations:
+  - tag: 1
+    origin: agent
+    paradigm_id: weighted_sum
+    latex: "B_k = w_1 \\cdot F_k^{\\mathrm{norm}} + w_2 \\cdot W_k^{\\mathrm{norm}} + w_3 \\cdot I_k^{\\mathrm{norm}}"
+    role: score
+  - tag: 2
+    origin: agent
+    paradigm_id: ema_smooth
+    latex: "H_t = \\rho \\cdot H_{t-1} + (1 - \\rho) \\cdot h_t"
+    role: smooth
+  - tag: 3
+    origin: agent
+    paradigm_id: weighted_sum
+    latex: "S_t = 1.0 - [u_1 \\cdot E_t^{\\mathrm{norm}} + u_2 \\cdot L_t^{\\mathrm{norm}} + u_3 \\cdot A_t^{\\mathrm{norm}}]"
+    role: score
+  - tag: 4
+    origin: agent
+    paradigm_id: update_rule
+    latex: "\\theta_m \\leftarrow \\theta_{m-1} + \\gamma \\cdot [S_t - \\tau_{\\mathrm{pass}}]"
+    role: assign
+  - tag: 5
+    origin: agent
+    paradigm_id: single_threshold
+    latex: "S_t < \\tau_{\\mathrm{rollback}}"
+    role: trigger
+symbols:
+  - symbol: "B_k"
+    meaning_zh: 候选自愈操作动作k的综合爆炸半径风险评分
+    unit_zh: 无量纲
+  - symbol: "F_k^{\\mathrm{norm}}"
+    meaning_zh: 操作动作k在微服务依赖拓扑中的归一化扇出传播深度
+    unit_zh: 无量纲
+  - symbol: "W_k^{\\mathrm{norm}}"
+    meaning_zh: 操作动作k的资源破坏性敏感度归一化权重
+    unit_zh: 无量纲
+  - symbol: "I_k^{\\mathrm{norm}}"
+    meaning_zh: 受影响下游微服务节点的最高业务重要性等级归一化值
+    unit_zh: 无量纲
+  - symbol: "w_1, w_2, w_3"
+    meaning_zh: 爆炸半径评估因子的预设加权系数
+    unit_zh: 无量纲
+  - symbol: "H_t"
+    meaning_zh: 第t周期经过滑动平滑处理后的金丝雀综合指标基线
+    unit_zh: 无量纲
+  - symbol: "h_t"
+    meaning_zh: 第t周期金丝雀沙箱采集到的瞬时性能指标值
+    unit_zh: 无量纲
+  - symbol: "\\rho"
+    meaning_zh: 指数滑动平滑的历史衰减系数
+    unit_zh: 无量纲
+  - symbol: "S_t"
+    meaning_zh: 金丝雀沙箱节点在第t周期的健康度综合评估分
+    unit_zh: 无量纲
+  - symbol: "E_t^{\\mathrm{norm}}"
+    meaning_zh: 金丝雀节点采集的归一化请求调用错误率
+    unit_zh: 无量纲
+  - symbol: "L_t^{\\mathrm{norm}}"
+    meaning_zh: 金丝雀节点采集的归一化请求响应时延波动率
+    unit_zh: 无量纲
+  - symbol: "A_t^{\\mathrm{norm}}"
+    meaning_zh: 金丝雀节点触发的关联告警严重级别归一化评分
+    unit_zh: 无量纲
+  - symbol: "u_1, u_2, u_3"
+    meaning_zh: 健康度劣化因子加权系数
+    unit_zh: 无量纲
+  - symbol: "\\theta_m"
+    meaning_zh: 第m轮渐进式放行阶段分配给自愈版本的金丝雀流量比例
+    unit_zh: 无量纲
+  - symbol: "\\gamma"
+    meaning_zh: 渐进式放行比例自适应步长调节增益系数
+    unit_zh: 无量纲
+  - symbol: "\\tau_{\\mathrm{pass}}"
+    meaning_zh: 触发金丝雀放行递增的最小健康度准入阈值
+    unit_zh: 无量纲
+  - symbol: "\\tau_{\\mathrm{rollback}}"
+    meaning_zh: 触发安全熔断与秒级原子回滚的健康度低限阈值
+    unit_zh: 无量纲
+numeric_example:
+  given:
+    "F_k^{\\mathrm{norm}}": 0.4
+    "W_k^{\\mathrm{norm}}": 0.3
+    "I_k^{\\mathrm{norm}}": 0.5
+    "w_1": 0.4
+    "w_2": 0.3
+    "w_3": 0.3
+  compute_zh: "B_k = 0.4 * 0.4 + 0.3 * 0.3 + 0.3 * 0.5 = 0.16 + 0.09 + 0.15 = 0.40"
+  result:
+    "B_k": 0.4
+notes_zh: "各特征均采用无量纲归一化，公式严格防零除，严禁使用波浪号等装饰音。"
