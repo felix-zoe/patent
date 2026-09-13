@@ -1,0 +1,88 @@
+$schema: formula_plan
+version: 1
+updated_at: "2026-09-13T09:41:00+08:00"
+theme_summary: "基于语义密度感知与多阶段重排的RAG知识切片召回方法及系统"
+paradigm_ids:
+  - cosine_sim
+  - weighted_sum
+  - ranking_fuse
+  - exponential_decay
+  - single_threshold
+plain_zh: "通过相邻句子余弦相似度与滑动窗口平滑量化局部语义密度突变以自适应切分知识切片，在线采用稠密向量与稀疏倒排动态权重融合混合召回，结合交叉编码器及实体覆盖、时效衰减多维打分重排序，并依据冗余度与Token预算实现上下文紧凑填充。"
+equations:
+  - tag: 1
+    origin: agent
+    paradigm_id: cosine_sim
+    latex: "S_{\\mathrm{sim}}(k) = \\frac{\\mathbf{v}_k^{\\top} \\mathbf{v}_{k+1}}{\\|\\mathbf{v}_k\\|_2 \\|\\mathbf{v}_{k+1}\\|_2 + \\varepsilon}"
+    role: score
+  - tag: 2
+    origin: agent
+    paradigm_id: weighted_sum
+    latex: "B_k = \\alpha \\cdot X_k + \\beta \\cdot Y_k"
+    role: trigger
+  - tag: 3
+    origin: agent
+    paradigm_id: ranking_fuse
+    latex: "S_i = \\lambda \\cdot D_i + [1 - \\lambda] \\cdot M_i"
+    role: score
+  - tag: 4
+    origin: agent
+    paradigm_id: weighted_sum
+    latex: "R_i = w_1 \\cdot S_i + w_2 \\cdot E_i + w_3 \\cdot T_i"
+    role: score
+  - tag: 5
+    origin: agent
+    paradigm_id: exponential_decay
+    latex: "T_i = \\exp(-\\Delta t / \\kappa)"
+    role: smooth
+  - tag: 6
+    origin: agent
+    paradigm_id: single_threshold
+    latex: "B_k \\ge \\tau_{\\mathrm{cut}}"
+    role: trigger
+symbols:
+  - symbol: "S_{\\mathrm{sim}}(k)"
+    meaning_zh: 句子k与句子k+1之间的向量余弦相似度
+    unit_zh: 无量纲
+  - symbol: "\\mathbf{v}_k"
+    meaning_zh: 句子k的稠密语义特征向量
+    unit_zh: 无量纲
+  - symbol: "B_k"
+    meaning_zh: 句子位置k处的切片边界判定综合突变得分
+    unit_zh: 无量纲
+  - symbol: "X_k, Y_k"
+    meaning_zh: 局部语义离散度与前后窗口语义变化绝对梯度归一化值
+    unit_zh: 无量纲
+  - symbol: "\\alpha, \\beta"
+    meaning_zh: 语义离散度与语义突变梯度的加权系数
+    unit_zh: 无量纲
+  - symbol: "\\tau_{\\mathrm{cut}}"
+    meaning_zh: 动态切片边界触发阈值
+    unit_zh: 无量纲
+  - symbol: "S_i"
+    meaning_zh: 候选切片i的混合检索融合分数
+    unit_zh: 无量纲
+  - symbol: "D_i, M_i"
+    meaning_zh: 候选切片i的稠密向量检索得分与稀疏倒排检索得分
+    unit_zh: 无量纲
+  - symbol: "\\lambda"
+    meaning_zh: 稠密与稀疏检索融合权重
+    unit_zh: 无量纲
+  - symbol: "R_i"
+    meaning_zh: 候选切片i的多维重排序综合最终得分
+    unit_zh: 无量纲
+  - symbol: "E_i, T_i"
+    meaning_zh: 候选切片i的关键实体覆盖契合度与时序衰减因子
+    unit_zh: 无量纲
+  - symbol: "w_1, w_2, w_3"
+    meaning_zh: 重排序各维度指标的加权系数
+    unit_zh: 无量纲
+numeric_example:
+  given:
+    "\\alpha": 0.6
+    "\\beta": 0.4
+    "X_k": 0.8
+    "Y_k": 0.5
+  compute_zh: "B_k = 0.6 * 0.8 + 0.4 * 0.5 = 0.68"
+  result:
+    "B_k": 0.68
